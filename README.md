@@ -13,16 +13,16 @@ When working with Three.js, Claude Code starts with general programming knowledg
 
 ## Installation
 
-Clone this repository into your project or copy the `.claude/skills` directory:
+Clone this repository into your project or copy the `skills` directory:
 
 ```bash
-git clone https://github.com/pinkforest/threejs-playground.git
+git clone https://github.com/CloudAI-X/threejs-skills.git
 ```
 
 Or add as a submodule:
 
 ```bash
-git submodule add https://github.com/pinkforest/threejs-playground.git
+git submodule add https://github.com/CloudAI-X/threejs-skills.git
 ```
 
 ## Skills Included
@@ -42,7 +42,7 @@ git submodule add https://github.com/pinkforest/threejs-playground.git
 
 ## How It Works
 
-Claude Code automatically loads skill files from the `.claude/skills` directory when they match the context of your request. When you ask Claude Code to:
+Claude Code automatically loads skill files from the `skills` directory when they match the context of your request. When you ask Claude Code to:
 
 - Create a 3D scene → `threejs-fundamentals` is loaded
 - Add lighting and shadows → `threejs-lighting` is loaded
@@ -123,7 +123,7 @@ These skills have been audited against the official Three.js documentation (r160
 Found an error or want to add coverage for additional Three.js features?
 
 1. Fork the repository
-2. Edit or create skill files in `.claude/skills/`
+2. Edit or create skill files in `skills/`
 3. Verify against [Three.js documentation](https://threejs.org/docs/)
 4. Submit a pull request
 
