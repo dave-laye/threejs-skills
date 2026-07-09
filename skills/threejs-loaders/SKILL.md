@@ -200,29 +200,37 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const loader = new GLTFLoader();
 
-loader.load("model.glb", (gltf) => {
-  // The loaded scene
-  const model = gltf.scene;
-  scene.add(model);
+loader.load(
+  "model.glb",
+  (gltf) => {
+    // The loaded scene
+    const model = gltf.scene;
+    scene.add(model);
 
-  // Animations
-  const animations = gltf.animations;
-  if (animations.length > 0) {
-    const mixer = new THREE.AnimationMixer(model);
-    animations.forEach((clip) => {
-      mixer.clipAction(clip).play();
-    });
-  }
+    // Animations
+    const animations = gltf.animations;
+    if (animations.length > 0) {
+      const mixer = new THREE.AnimationMixer(model);
+      animations.forEach((clip) => {
+        mixer.clipAction(clip).play();
+      });
+    }
 
-  // Cameras (if any)
-  const cameras = gltf.cameras;
+    // Cameras (if any)
+    const cameras = gltf.cameras;
 
-  // Asset info
-  console.log(gltf.asset); // Version, generator, etc.
+    // Asset info
+    console.log(gltf.asset); // Version, generator, etc.
 
-  // User data from Blender/etc
-  console.log(gltf.userData);
-});
+    // User data from Blender/etc
+    console.log(gltf.userData);
+  },
+  undefined, // onProgress
+  // Always pass onError - without it, load failures are swallowed silently
+  (error) => {
+    console.error("Failed to load model.glb:", error);
+  },
+);
 ```
 
 ### GLTF with Draco Compression
@@ -387,6 +395,9 @@ async function init() {
     scene.add(gltf.scene);
   } catch (error) {
     console.error("Failed to load model:", error);
+    // Re-throw so callers can react instead of silently continuing
+    // with a broken scene. Handle here only if this is the top level.
+    throw error;
   }
 }
 ```
@@ -515,9 +526,13 @@ const texture = loader.load("data:image/png;base64,iVBORw0KGgo...");
 ```javascript
 async function loadFromBlob(blob) {
   const url = URL.createObjectURL(blob);
-  const texture = await loadTexture(url);
-  URL.revokeObjectURL(url);
-  return texture;
+  // Use try/finally so the object URL is revoked even when loading fails,
+  // and let the error propagate to the caller.
+  try {
+    return await loadTexture(url);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 ```
 
@@ -526,13 +541,26 @@ async function loadFromBlob(blob) {
 ```javascript
 // From fetch
 const response = await fetch("model.glb");
+// fetch() does not reject on HTTP errors - check status or a 404/500
+// body gets parsed as a model and fails in a confusing way
+if (!response.ok) {
+  throw new Error(`Failed to fetch model.glb: ${response.status}`);
+}
 const buffer = await response.arrayBuffer();
 
 // Parse with loader
 const loader = new GLTFLoader();
-loader.parse(buffer, "", (gltf) => {
-  scene.add(gltf.scene);
-});
+loader.parse(
+  buffer,
+  "",
+  (gltf) => {
+    scene.add(gltf.scene);
+  },
+  // parse() reports failures via onError; omit it and errors are swallowed
+  (error) => {
+    console.error("Failed to parse GLTF buffer:", error);
+  },
+);
 ```
 
 ### Custom Path/URL
@@ -566,14 +594,17 @@ async function loadWithFallback(primaryUrl, fallbackUrl) {
 
 // Retry logic
 async function loadWithRetry(url, maxRetries = 3) {
+  let lastError;
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await loadModel(url);
     } catch (error) {
-      if (i === maxRetries - 1) throw error;
+      lastError = error;
       await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
     }
   }
+  // Propagate the final failure instead of resolving with undefined
+  throw lastError ?? new Error(`Failed to load ${url}`);
 }
 
 // Timeout
@@ -582,14 +613,15 @@ async function loadWithTimeout(url, timeout = 30000) {
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    return response;
+    return await fetch(url, { signal: controller.signal });
   } catch (error) {
     if (error.name === "AbortError") {
       throw new Error("Loading timed out");
     }
     throw error;
+  } finally {
+    // Clear the timer on every path so it can't fire (and abort) later
+    clearTimeout(timeoutId);
   }
 }
 ```
@@ -610,10 +642,16 @@ const placeholder = new THREE.Mesh(
 );
 scene.add(placeholder);
 
-loadModel("model.glb").then((gltf) => {
-  scene.remove(placeholder);
-  scene.add(gltf.scene);
-});
+loadModel("model.glb")
+  .then((gltf) => {
+    scene.remove(placeholder);
+    scene.add(gltf.scene);
+  })
+  // Handle the rejection - a bare .then() leaves failures as
+  // unhandled promise rejections and the placeholder stuck on screen
+  .catch((error) => {
+    console.error("Failed to load model.glb:", error);
+  });
 ```
 
 ## See Also

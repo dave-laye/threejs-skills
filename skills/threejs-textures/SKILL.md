@@ -32,7 +32,8 @@ loader.load(
   "texture.jpg",
   (texture) => console.log("Loaded"),
   (progress) => console.log("Progress"),
-  (error) => console.error("Error"),
+  // Always forward the error object so failures aren't swallowed
+  (error) => console.error("Failed to load texture.jpg:", error),
 );
 
 // Synchronous style (loads async internally)
