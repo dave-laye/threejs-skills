@@ -1,0 +1,23 @@
+{
+  "name": "threejs-skills",
+  "version": "1.0.0",
+  "description": "Curated Three.js skill files plus shared boilerplate utilities.",
+  "type": "module",
+  "main": "lib/three-utils.js",
+  "exports": {
+    ".": "./lib/three-utils.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "three": ">=0.152.0"
+  },
+  "devDependencies": {
+    "prettier": "3.3.3",
+    "three": "0.169.0"
+  }
+}

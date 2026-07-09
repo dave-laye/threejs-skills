@@ -55,6 +55,10 @@ window.addEventListener("resize", () => {
 });
 ```
 
+> This boilerplate (scene/camera/renderer bootstrap, resize, render loop,
+> disposal) is packaged as reusable helpers in `threejs-utils`
+> (`lib/three-utils.js`) so other skills don't repeat it.
+
 ## Core Classes
 
 ### Scene
@@ -414,6 +418,9 @@ function dispose() {
 }
 ```
 
+> `disposeObject(mesh)` from `threejs-utils` performs the geometry / material /
+> texture disposal and detaches the object for you (recursively by default).
+
 ### Clock for Animation
 
 ```javascript
@@ -445,6 +452,9 @@ function onWindowResize() {
 }
 window.addEventListener("resize", onWindowResize);
 ```
+
+> `bindResize(camera, renderer)` from `threejs-utils` wires up this exact
+> handler and returns an unsubscribe function.
 
 ### Loading Manager
 
@@ -483,6 +493,7 @@ scene.add(lod);
 
 ## See Also
 
+- `threejs-utils` - Reusable bootstrap, resize, render-loop and disposal helpers
 - `threejs-geometry` - Geometry creation and manipulation
 - `threejs-materials` - Material types and properties
 - `threejs-lighting` - Light types and shadows

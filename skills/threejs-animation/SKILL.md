@@ -9,21 +9,19 @@ description: Three.js animation - keyframe animation, skeletal animation, morph 
 
 ```javascript
 import * as THREE from "three";
+import { createRenderLoop } from "../../lib/three-utils.js";
 
-// Simple procedural animation
-const clock = new THREE.Clock();
-
-function animate() {
-  const delta = clock.getDelta();
-  const elapsed = clock.getElapsedTime();
-
-  mesh.rotation.y += delta;
-  mesh.position.y = Math.sin(elapsed) * 0.5;
-
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-}
-animate();
+// createRenderLoop supplies delta/elapsed from an internal THREE.Clock
+const loop = createRenderLoop({
+  renderer,
+  scene,
+  camera,
+  update: (delta, elapsed) => {
+    mesh.rotation.y += delta;
+    mesh.position.y = Math.sin(elapsed) * 0.5;
+  },
+});
+loop.start();
 ```
 
 ## Animation System Overview
@@ -547,6 +545,7 @@ function getClip(name) {
 
 ## See Also
 
+- `threejs-utils` - Shared `createRenderLoop` with delta/elapsed timing
 - `threejs-loaders` - Loading animated GLTF models
 - `threejs-fundamentals` - Clock and animation loop
 - `threejs-shaders` - Vertex animation in shaders

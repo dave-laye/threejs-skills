@@ -39,6 +39,25 @@ git submodule add https://github.com/pinkforest/threejs-playground.git
 | **threejs-shaders**        | GLSL basics, ShaderMaterial, uniforms, custom effects                   |
 | **threejs-postprocessing** | EffectComposer, bloom, DOF, screen effects, custom passes               |
 | **threejs-interaction**    | Raycasting, camera controls, mouse/touch input, object selection        |
+| **threejs-utils**          | Shared boilerplate helpers (bootstrap, resize, render loop, disposal)   |
+
+## Shared Utilities
+
+The boilerplate that recurs across skills (renderer/scene bootstrap, resize
+handling, the render loop, pointer-to-NDC conversion, and resource disposal) is
+implemented once in [`lib/three-utils.js`](lib/three-utils.js) and documented by
+the `threejs-utils` skill. Examples import these helpers instead of duplicating
+the setup code:
+
+```javascript
+import {
+  createScene,
+  bindResize,
+  createRenderLoop,
+  getPointerNDC,
+  disposeObject,
+} from "./lib/three-utils.js";
+```
 
 ## How It Works
 

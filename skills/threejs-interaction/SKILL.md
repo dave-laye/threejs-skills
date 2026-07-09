@@ -10,6 +10,7 @@ description: Three.js interaction - raycasting, controls, mouse/touch input, obj
 ```javascript
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { getPointerNDC } from "../../lib/three-utils.js";
 
 // Camera controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -20,8 +21,7 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 function onClick(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  getPointerNDC(event, mouse); // event -> normalized device coords
 
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(scene.children);
@@ -33,6 +33,9 @@ function onClick(event) {
 
 window.addEventListener("click", onClick);
 ```
+
+> `getPointerNDC` (see `threejs-utils`) replaces the repeated
+> `(clientX / innerWidth) * 2 - 1` conversion used throughout this skill.
 
 ## Raycaster
 
@@ -67,19 +70,18 @@ const intersects = raycaster.intersectObjects(objects, recursive);
 ### Mouse Position Conversion
 
 ```javascript
+import { getPointerNDC } from "../../lib/three-utils.js";
+
 const mouse = new THREE.Vector2();
 
+// For full window
 function updateMouse(event) {
-  // For full window
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  getPointerNDC(event, mouse);
 }
 
-// For specific canvas element
+// For a specific canvas element (relative to its bounding rect)
 function updateMouseCanvas(event, canvas) {
-  const rect = canvas.getBoundingClientRect();
-  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  getPointerNDC(event, mouse, canvas);
 }
 ```
 
@@ -90,9 +92,7 @@ function onTouchStart(event) {
   event.preventDefault();
 
   if (event.touches.length === 1) {
-    const touch = event.touches[0];
-    mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+    getPointerNDC(event, mouse); // reads the first touch automatically
 
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(clickableObjects);
@@ -391,8 +391,7 @@ const mouse = new THREE.Vector2();
 let selectedObject = null;
 
 function onMouseDown(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  getPointerNDC(event, mouse);
 
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(selectableObjects);
@@ -422,29 +421,20 @@ const selectionBox = new SelectionBox(camera, scene);
 const selectionHelper = new SelectionHelper(renderer, "selectBox"); // CSS class
 
 document.addEventListener("pointerdown", (event) => {
-  selectionBox.startPoint.set(
-    (event.clientX / window.innerWidth) * 2 - 1,
-    -(event.clientY / window.innerHeight) * 2 + 1,
-    0.5,
-  );
+  const { x, y } = getPointerNDC(event);
+  selectionBox.startPoint.set(x, y, 0.5);
 });
 
 document.addEventListener("pointermove", (event) => {
   if (selectionHelper.isDown) {
-    selectionBox.endPoint.set(
-      (event.clientX / window.innerWidth) * 2 - 1,
-      -(event.clientY / window.innerHeight) * 2 + 1,
-      0.5,
-    );
+    const { x, y } = getPointerNDC(event);
+    selectionBox.endPoint.set(x, y, 0.5);
   }
 });
 
 document.addEventListener("pointerup", (event) => {
-  selectionBox.endPoint.set(
-    (event.clientX / window.innerWidth) * 2 - 1,
-    -(event.clientY / window.innerHeight) * 2 + 1,
-    0.5,
-  );
+  const { x, y } = getPointerNDC(event);
+  selectionBox.endPoint.set(x, y, 0.5);
 
   const selected = selectionBox.select();
   console.log("Selected objects:", selected);
@@ -459,8 +449,7 @@ const mouse = new THREE.Vector2();
 let hoveredObject = null;
 
 function onMouseMove(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  getPointerNDC(event, mouse);
 
   raycaster.setFromCamera(mouse, camera);
   const intersects = raycaster.intersectObjects(hoverableObjects);
@@ -574,6 +563,8 @@ const worldPos = getRayPlaneIntersection(mouse, camera, groundPlane);
 ## Event Handling Best Practices
 
 ```javascript
+import { getPointerNDC } from "../../lib/three-utils.js";
+
 class InteractionManager {
   constructor(camera, renderer, scene) {
     this.camera = camera;
@@ -595,9 +586,7 @@ class InteractionManager {
   }
 
   updateMouse(event) {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    getPointerNDC(event, this.mouse, this.renderer.domElement);
   }
 
   getIntersects() {
@@ -655,6 +644,7 @@ clickables.push(collisionMesh);
 
 ## See Also
 
+- `threejs-utils` - Shared `getPointerNDC` and render-loop helpers
 - `threejs-fundamentals` - Camera and scene setup
 - `threejs-animation` - Animating interactions
 - `threejs-shaders` - Visual feedback effects

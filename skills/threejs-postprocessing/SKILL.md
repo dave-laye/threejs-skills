@@ -12,6 +12,7 @@ import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { createRenderLoop } from "../../lib/three-utils.js";
 
 // Setup composer
 const composer = new EffectComposer(renderer);
@@ -29,11 +30,9 @@ const bloomPass = new UnrealBloomPass(
 );
 composer.addPass(bloomPass);
 
-// Animation loop - use composer instead of renderer
-function animate() {
-  requestAnimationFrame(animate);
-  composer.render(); // NOT renderer.render()
-}
+// Pass the composer so the loop renders through it instead of renderer.render()
+const loop = createRenderLoop({ renderer, scene, camera, composer });
+loop.start();
 ```
 
 ## EffectComposer Setup
@@ -568,35 +567,30 @@ if (!isMobile) {
 ## Handle Resize
 
 ```javascript
-function onWindowResize() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const pixelRatio = renderer.getPixelRatio();
+import { bindResize } from "../../lib/three-utils.js";
 
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-
-  renderer.setSize(width, height);
-  composer.setSize(width, height);
-
-  // Update pass-specific resolutions
-  if (fxaaPass) {
-    fxaaPass.material.uniforms["resolution"].value.set(
-      1 / (width * pixelRatio),
-      1 / (height * pixelRatio),
-    );
-  }
-
-  if (bloomPass) {
-    bloomPass.resolution.set(width, height);
-  }
-}
-
-window.addEventListener("resize", onWindowResize);
+// bindResize keeps the camera + renderer + composer in sync; add only the
+// pass-specific resolution updates here.
+bindResize(camera, renderer, {
+  composer,
+  onResize: ({ width, height }) => {
+    const pixelRatio = renderer.getPixelRatio();
+    if (fxaaPass) {
+      fxaaPass.material.uniforms["resolution"].value.set(
+        1 / (width * pixelRatio),
+        1 / (height * pixelRatio),
+      );
+    }
+    if (bloomPass) {
+      bloomPass.resolution.set(width, height);
+    }
+  },
+});
 ```
 
 ## See Also
 
+- `threejs-utils` - Shared render loop (`createRenderLoop`) and resize helpers
 - `threejs-shaders` - Custom shader development
 - `threejs-textures` - Render targets
 - `threejs-fundamentals` - Renderer setup
